@@ -162,3 +162,8 @@ aws cloudformation deploy \
 ```
 
 The `CAPABILITY_NAMED_IAM` flag is required because the template creates a named IAM role. 
+
+Teardown the template:
+```
+aws cloudformation delete-stack --stack-name byoc-s3-list
+```
