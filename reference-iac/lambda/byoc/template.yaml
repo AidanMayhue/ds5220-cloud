@@ -6,6 +6,9 @@ Parameters:
     Type: String
     Default: 440848399208.dkr.ecr.us-east-1.amazonaws.com/my-lambda-fn:latest
     Description: ECR image URI for the Lambda function
+  SourceBucketName:
+    Type: String
+    Description: Name for the new S3 bucket to create. Must be globally unique. New objects in this bucket will trigger the Lambda.
 
 Resources:
 
@@ -30,7 +33,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:GetObject
-                Resource: arn:aws:s3:::s3-linecount/*
+                Resource: !Sub arn:aws:s3:::${SourceBucketName}/*
               - Effect: Allow
                 Action:
                   - s3:ListAllMyBuckets
@@ -49,6 +52,30 @@ Resources:
       Architectures:
         - x86_64
 
+  S3InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !Sub arn:aws:s3:::${SourceBucketName}
+
+  SourceBucket:
+    Type: AWS::S3::Bucket
+    DependsOn: S3InvokePermission
+    Properties:
+      BucketName: !Ref SourceBucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt LambdaFunction.Arn
+
 Outputs:
   FunctionName:
     Value: !Ref LambdaFunction
@@ -56,3 +83,5 @@ Outputs:
     Value: !GetAtt LambdaFunction.Arn
   RoleArn:
     Value: !GetAtt LambdaExecutionRole.Arn
+  SourceBucketName:
+    Value: !Ref SourceBucket

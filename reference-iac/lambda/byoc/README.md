@@ -157,10 +157,15 @@ To deploy this template from the CLI:
 aws cloudformation deploy \
   --template-file template.yaml \
   --stack-name byoc-s3-list \
-  --capabilities CAPABILITY_NAMED_IAM                                                             
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides \
+    ImageUri=440848399208.dkr.ecr.us-east-1.amazonaws.com/my-lambda-fn:latest \
+    SourceBucketName=my-unique-trigger-bucket-name
 ```
 
-The `CAPABILITY_NAMED_IAM` flag is required because the template creates a named IAM role. 
+The `CAPABILITY_NAMED_IAM` flag is required because the template creates a named IAM role.
+
+`SourceBucketName` must be globally unique across all of S3 — pick a name that isn't already taken. The template creates this bucket and wires `s3:ObjectCreated:*` events to invoke the Lambda. 
 
 Teardown the template:
 ```
